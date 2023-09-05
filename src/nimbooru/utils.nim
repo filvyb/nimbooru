@@ -1,5 +1,6 @@
 type
   BooruError* = object of CatchableError
+  BooruNotFoundError* = object of BooruError
 
 type
   Boorus* = enum
