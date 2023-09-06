@@ -21,3 +21,9 @@ proc asyncGetPost*(client: BooruClient, id: string): Future[BooruImage] {.async.
   base_url = prepareGetPost(client, id, base_url)
   var cont = await asyncGetUrl(base_url)
   result = initBooruImage(client, client.processPost(cont))
+
+proc asyncGetPosts*(client: BooruClient, limit = 100, page = 0, tags = none seq[string], exclude_tags = none seq[string]): Future[seq[BooruImage]] {.async.} =
+  var base_url = prepareEndpoint(client)
+  base_url = prepareGetPosts(client, limit, page, tags, exclude_tags, base_url)
+  var cont = await asyncGetUrl(base_url)
+  result = client.processPosts(cont)
