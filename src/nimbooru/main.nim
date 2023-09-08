@@ -22,11 +22,11 @@ proc initBooruClient*(site_url: string, site: Boorus, apiKey = none string, user
 proc asyncGetPost*(client: BooruClient, id: string): Future[BooruImage] {.async.} = 
   var base_url = prepareEndpoint(client)
   base_url = prepareGetPost(client, id, base_url)
-  var cont = await asyncGetUrl(base_url)
+  var cont = await client.asyncGetUrl(base_url)
   result = initBooruImage(client, client.processPost(cont))
 
 proc asyncSearchPosts*(client: BooruClient, limit = 100, page = 0, tags = none seq[string], exclude_tags = none seq[string]): Future[seq[BooruImage]] {.async.} =
   var base_url = prepareEndpoint(client)
   base_url = prepareSearchPosts(client, limit, page, tags, exclude_tags, base_url)
-  var cont = await asyncGetUrl(base_url)
+  var cont = await client.asyncGetUrl(base_url)
   result = client.processSearchPosts(cont)

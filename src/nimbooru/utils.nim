@@ -5,3 +5,4 @@ type
 type
   Boorus* = enum
     Gelbooru = "https://gelbooru.com/"
+    Safebooru = "https://safebooru.org/"

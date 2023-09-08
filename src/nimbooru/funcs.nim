@@ -7,7 +7,7 @@ import std/strutils
 import containers
 import utils
 
-proc asyncGetUrl*(url: string): Future[string] {.async.} =
+proc asyncGetUrl*(client: BooruClient, url: string): Future[string] {.async.} =
   var client = newAsyncHttpClient()
   try:
     result = await client.getContent(url)
@@ -38,12 +38,15 @@ proc prepareGetPost*(client: BooruClient, id: string, url: string): string =
   if client.customApi.isNone:
     var b = client.site.get()
     case b:
-      of Gelbooru:
+      of Gelbooru, Safebooru:
         result &= url
         result &= "&s=post"
         result &= "&id=" & id
 
 proc processPost*(client: BooruClient, cont: string): JsonNode =
+  if cont.len == 0:
+    raise newException(BooruNotFoundError, "Post not found")
+
   var resp = parseJson(cont)
 
   if client.customApi.isNone:
@@ -54,6 +57,11 @@ proc processPost*(client: BooruClient, cont: string): JsonNode =
         if count == 0:
           raise newException(BooruNotFoundError, "Post not found")
         result = resp["post"].getElems()[0]
+      of Safebooru:
+        var elems = resp.getElems()
+        if elems.len == 0:
+          raise newException(BooruNotFoundError, "Post not found")
+        result = elems[0]
 
 proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Option[seq[string]], exclude_tags: Option[seq[string]], url: string): string =
   let formatted_tags = formatTags(tags, exclude_tags)
@@ -62,7 +70,7 @@ proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Optio
   if client.customApi.isNone:
     var b = client.site.get()
     case b:
-      of Gelbooru:
+      of Gelbooru, Safebooru:
         result &= "&s=post"
         result &= "&limit=" & $limit
         result &= "&pid=" & $page
@@ -80,4 +88,10 @@ proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
         if count == 0:
           raise newException(BooruNotFoundError, "No posts not found")
         for p in resp["post"].getElems():
+          result &= initBooruImage(client, p)
+      of Safebooru:
+        var elems = resp.getElems()
+        if elems.len == 0:
+          raise newException(BooruNotFoundError, "Post not found")
+        for p in elems:
           result &= initBooruImage(client, p)
