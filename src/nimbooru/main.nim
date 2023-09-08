@@ -6,14 +6,17 @@ import utils
 import funcs
 import containers
 
+## Initialize BooruClient to use one of the supported boorus
 proc initBooruClient*(site: Boorus, apiKey = none string, userId = none string): BooruClient =
   result.apiKey = apiKey
   result.userdId = userId
   result.site = some site
 
-proc initBooruClient*(site_url: string, apiKey = none string, userId = none string): BooruClient =
+## Initialize BooruClient to use a custom endpoint, use site argument to pick an API version
+proc initBooruClient*(site_url: string, site: Boorus, apiKey = none string, userId = none string): BooruClient =
   result.apiKey = apiKey
   result.userdId = userId
+  result.site = some site
   result.customApi = some site_url
 
 proc asyncGetPost*(client: BooruClient, id: string): Future[BooruImage] {.async.} = 
@@ -22,8 +25,8 @@ proc asyncGetPost*(client: BooruClient, id: string): Future[BooruImage] {.async.
   var cont = await asyncGetUrl(base_url)
   result = initBooruImage(client, client.processPost(cont))
 
-proc asyncGetPosts*(client: BooruClient, limit = 100, page = 0, tags = none seq[string], exclude_tags = none seq[string]): Future[seq[BooruImage]] {.async.} =
+proc asyncSearchPosts*(client: BooruClient, limit = 100, page = 0, tags = none seq[string], exclude_tags = none seq[string]): Future[seq[BooruImage]] {.async.} =
   var base_url = prepareEndpoint(client)
-  base_url = prepareGetPosts(client, limit, page, tags, exclude_tags, base_url)
+  base_url = prepareSearchPosts(client, limit, page, tags, exclude_tags, base_url)
   var cont = await asyncGetUrl(base_url)
-  result = client.processPosts(cont)
+  result = client.processSearchPosts(cont)

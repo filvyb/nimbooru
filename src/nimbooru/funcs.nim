@@ -55,7 +55,7 @@ proc processPost*(client: BooruClient, cont: string): JsonNode =
           raise newException(BooruNotFoundError, "Post not found")
         result = resp["post"].getElems()[0]
 
-proc prepareGetPosts*(client: BooruClient, limit: int, page: int, tags: Option[seq[string]], exclude_tags: Option[seq[string]], url: string): string =
+proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Option[seq[string]], exclude_tags: Option[seq[string]], url: string): string =
   let formatted_tags = formatTags(tags, exclude_tags)
   result &= url
 
@@ -69,7 +69,7 @@ proc prepareGetPosts*(client: BooruClient, limit: int, page: int, tags: Option[s
         if formatted_tags.len > 0:
           result &= "&tags=" & formatted_tags.join(" ")
 
-proc processPosts*(client: BooruClient, cont: string): seq[BooruImage] =
+proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
   var resp = parseJson(cont)
 
   if client.customApi.isNone:
