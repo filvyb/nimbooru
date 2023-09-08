@@ -35,13 +35,12 @@ proc formatTags(tags: Option[seq[string]], exclude_tags: Option[seq[string]]): s
       result &= "-" & tag.strip().strip(chars = {'-'}).toLower().replace(" ", "_")
 
 proc prepareGetPost*(client: BooruClient, id: string, url: string): string =
-  if client.customApi.isNone:
-    var b = client.site.get()
-    case b:
-      of Gelbooru, Safebooru:
-        result &= url
-        result &= "&s=post"
-        result &= "&id=" & id
+  var b = client.site.get()
+  case b:
+    of Gelbooru, Safebooru:
+      result &= url
+      result &= "&s=post"
+      result &= "&id=" & id
 
 proc processPost*(client: BooruClient, cont: string): JsonNode =
   if cont.len == 0:
@@ -49,49 +48,46 @@ proc processPost*(client: BooruClient, cont: string): JsonNode =
 
   var resp = parseJson(cont)
 
-  if client.customApi.isNone:
-    var b = client.site.get()
-    case b:
-      of Gelbooru:
-        var count = resp["@attributes"]["count"].getInt()
-        if count == 0:
-          raise newException(BooruNotFoundError, "Post not found")
-        result = resp["post"].getElems()[0]
-      of Safebooru:
-        var elems = resp.getElems()
-        if elems.len == 0:
-          raise newException(BooruNotFoundError, "Post not found")
-        result = elems[0]
+  var b = client.site.get()
+  case b:
+    of Gelbooru:
+      var count = resp["@attributes"]["count"].getInt()
+      if count == 0:
+        raise newException(BooruNotFoundError, "Post not found")
+      result = resp["post"].getElems()[0]
+    of Safebooru:
+      var elems = resp.getElems()
+      if elems.len == 0:
+        raise newException(BooruNotFoundError, "Post not found")
+      result = elems[0]
 
 proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Option[seq[string]], exclude_tags: Option[seq[string]], url: string): string =
   let formatted_tags = formatTags(tags, exclude_tags)
   result &= url
 
-  if client.customApi.isNone:
-    var b = client.site.get()
-    case b:
-      of Gelbooru, Safebooru:
-        result &= "&s=post"
-        result &= "&limit=" & $limit
-        result &= "&pid=" & $page
-        if formatted_tags.len > 0:
-          result &= "&tags=" & formatted_tags.join(" ")
+  var b = client.site.get()
+  case b:
+    of Gelbooru, Safebooru:
+      result &= "&s=post"
+      result &= "&limit=" & $limit
+      result &= "&pid=" & $page
+      if formatted_tags.len > 0:
+        result &= "&tags=" & formatted_tags.join(" ")
 
 proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
   var resp = parseJson(cont)
 
-  if client.customApi.isNone:
-    var b = client.site.get()
-    case b:
-      of Gelbooru:
-        var count = resp["@attributes"]["count"].getInt()
-        if count == 0:
-          raise newException(BooruNotFoundError, "No posts not found")
-        for p in resp["post"].getElems():
-          result &= initBooruImage(client, p)
-      of Safebooru:
-        var elems = resp.getElems()
-        if elems.len == 0:
-          raise newException(BooruNotFoundError, "Post not found")
-        for p in elems:
-          result &= initBooruImage(client, p)
+  var b = client.site.get()
+  case b:
+    of Gelbooru:
+      var count = resp["@attributes"]["count"].getInt()
+      if count == 0:
+        raise newException(BooruNotFoundError, "No posts not found")
+      for p in resp["post"].getElems():
+        result &= initBooruImage(client, p)
+    of Safebooru:
+      var elems = resp.getElems()
+      if elems.len == 0:
+        raise newException(BooruNotFoundError, "Post not found")
+      for p in elems:
+        result &= initBooruImage(client, p)

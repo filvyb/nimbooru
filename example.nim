@@ -1,5 +1,5 @@
 import std/asyncdispatch
-import src/Nimbooru
+import src/nimbooru
 import std/options
 
 var b = initBooruClient(Safebooru)
