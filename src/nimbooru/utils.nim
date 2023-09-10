@@ -3,6 +3,8 @@ type
   BooruNotFoundError* = object of BooruError
 
 type
-  Boorus* = enum
+  Boorus* {.pure.} = enum
     Gelbooru = "https://gelbooru.com/"
     Safebooru = "https://safebooru.org/"
+    Danbooru = "https://danbooru.donmai.us/"
+    

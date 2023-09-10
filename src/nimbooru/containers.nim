@@ -84,3 +84,33 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
         result.tags = img["tags"].getStr().split(" ")
         result.score = img["score"].getInt()
         result.change = img["change"].getInt().fromUnix()
+      of Danbooru:
+        result.id = $img["id"].getInt()
+        if img.hasKey("uploader_id"):
+          result.creator_id = some $img["uploader_id"].getInt()
+        result.parent_id = $img["parent_id"].getInt(0)
+        if img.hasKey("created_at"):
+          result.created_at = some parse(img["created_at"].getStr(), "YYYY-MM-dd'T'HH:mm:ss'.'fffzzz")
+        result.file_url = img["file_url"].getStr()
+        result.preview_url = img["preview_file_url"].getStr()
+        result.filename = result.file_url.rsplit({'/'}, maxsplit=1)[1]
+        if img.hasKey("source"):
+          result.source = some img["source"].getStr()
+        result.hash = img["md5"].getStr()
+        result.height = img["image_height"].getInt()
+        result.width = img["image_width"].getInt()
+        result.rating = img["rating"].getStr()
+        if img["last_commented_at"].getStr("") != "":
+          result.has_comments = true
+        else:
+          result.has_comments = false
+        if img["last_noted_at"].getStr("") != "":
+          result.has_notes = true
+        else:
+          result.has_notes = false
+        result.has_children = img["has_children"].getBool()
+        result.tags = img["tag_string"].getStr().split(" ")
+        result.change = parseTime(img["updated_at"].getStr(), "YYYY-MM-dd'T'HH:mm:ss'.'fffzzz", utc())
+        result.status = img["media_asset"]["status"].getStr()
+        result.locked = img["is_banned"].getBool()
+        result.score = img["score"].getInt()
