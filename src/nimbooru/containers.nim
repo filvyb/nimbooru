@@ -114,3 +114,25 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
         result.status = img["media_asset"]["status"].getStr()
         result.locked = img["is_banned"].getBool()
         result.score = img["score"].getInt()
+      of Yandare, Konachan:
+        result.id = $img["id"].getInt()
+        if img.hasKey("creator_id"):
+          result.creator_id = some $img["creator_id"].getInt()
+        result.parent_id = $img["parent_id"].getInt(0)
+        result.created_at = some parse($img["created_at"].getInt().fromUnix(), "yyyy-MM-dd'T'HH:mm:sszzz")
+        if img.hasKey("updated_at"):
+          result.change = img["updated_at"].getInt().fromUnix()
+        if img.hasKey("source"):
+          result.source = some img["source"].getStr()
+        result.score = img["score"].getInt()
+        result.hash = img["md5"].getStr()
+        result.file_url = img["file_url"].getStr()
+        result.preview_url = img["preview_url"].getStr()
+        result.filename = result.file_url.rsplit({'/'}, maxsplit=1)[1]
+        result.height = img["height"].getInt()
+        result.width = img["width"].getInt()
+        result.rating = img["rating"].getStr()
+        result.has_children = img["has_children"].getBool()
+        result.tags = img["tags"].getStr().split(" ")
+        result.status = img["status"].getStr()
+        result.locked = img["is_held"].getBool()
