@@ -28,6 +28,11 @@ proc prepareEndpoint*(client: BooruClient): string =
         result &= "&api_key=" & client.apiKey.get()
       if client.userdId.isSome:
         result &= "&user_id=" & client.userdId.get()
+    of E621:
+      if client.userdId.isSome:
+        result &= "?login=" & client.userdId.get()
+      if client.apiKey.isSome:
+        result &= "&api_key=" & client.apiKey.get()
     else:
       return
 
@@ -47,7 +52,7 @@ proc prepareGetPost*(client: BooruClient, id: string, url: string): string =
     of Gelbooru, Safebooru:
       result &= "&s=post"
       result &= "&id=" & id
-    of Danbooru:
+    of Danbooru, E621:
       result &= "posts/" & id & ".json"
     of Yandare, Konachan:
       result &= "post/show/" & id
@@ -84,6 +89,12 @@ proc processPost*(client: BooruClient, cont: string): JsonNode =
       var end_pos = cont.find("</script>", start_pos)
       var resp = cont[start_pos + 19 ..< end_pos - 3].parseJson()
       result = resp["posts"].getElems()[0]
+    of E621:
+      var resp = parseJson(cont)
+      if resp.hasKey("success"):
+        if not resp["success"].getBool():
+          raise newException(BooruNotFoundError, "Post not found")
+      result = resp["post"]
 
 proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Option[seq[string]], exclude_tags: Option[seq[string]], url: string): string =
   let formatted_tags = formatTags(tags, exclude_tags)
@@ -97,18 +108,18 @@ proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Optio
       result &= "&pid=" & $page
       if formatted_tags.len > 0:
         result &= "&tags=" & formatted_tags.join(" ")
-    of Danbooru:
+    of Danbooru, E621:
       result &= "posts.json"
       result &= "?limit=" & $limit
-      result &= "?page=" & $page
+      result &= "&page=" & $page
       if formatted_tags.len > 0:
-        result &= "?tags=" & formatted_tags.join(" ")
+        result &= "&tags=" & formatted_tags.join(" ")
     of Yandare, Konachan:
       result &= "post.json"
       result &= "?limit=" & $limit
-      result &= "?page=" & $page
+      result &= "&page=" & $page
       if formatted_tags.len > 0:
-        result &= "?tags=" & formatted_tags.join(" ")
+        result &= "&tags=" & formatted_tags.join(" ")
 
 proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
   var resp = parseJson(cont)
@@ -129,6 +140,12 @@ proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
           if not resp["success"].getBool():
             raise newException(BooruError, "Search limit hit or post not found")
         # Safebooru
+        raise newException(BooruNotFoundError, "Post not found")
+      for p in elems:
+        result &= initBooruImage(client, p)
+    of E621:
+      var elems = resp["posts"].getElems()
+      if elems.len == 0:
         raise newException(BooruNotFoundError, "Post not found")
       for p in elems:
         result &= initBooruImage(client, p)

@@ -8,3 +8,4 @@ Basic wrapper for searching and retrieving posts from various Boorus
 * Danbooru
 * Yandare
 * Konachan
+* e621
