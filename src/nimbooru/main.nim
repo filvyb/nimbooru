@@ -20,6 +20,20 @@ proc initBooruClient*(site_url: string, site: Boorus, apiKey = none string, user
   result.customApi = some site_url
 
 ## Get a single post from a post id
+proc getPost*(client: BooruClient, id: string): BooruImage = 
+  var base_url = prepareEndpoint(client)
+  base_url = prepareGetPost(client, id, base_url)
+  var cont = client.syncGetUrl(base_url)
+  result = initBooruImage(client, client.processPost(cont))
+
+## Get a sequence of posts optionally filtered by tags
+proc searchPosts*(client: BooruClient, limit = 100, page = 0, tags = none seq[string], exclude_tags = none seq[string]): seq[BooruImage] =
+  var base_url = prepareEndpoint(client)
+  base_url = prepareSearchPosts(client, limit, page, tags, exclude_tags, base_url)
+  var cont = client.syncGetUrl(base_url)
+  result = client.processSearchPosts(cont)
+
+## Get a single post from a post id
 proc asyncGetPost*(client: BooruClient, id: string): Future[BooruImage] {.async.} = 
   var base_url = prepareEndpoint(client)
   base_url = prepareGetPost(client, id, base_url)

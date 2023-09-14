@@ -7,10 +7,25 @@ import std/strutils
 import containers
 import utils
 
-proc asyncGetUrl*(client: BooruClient, url: string): Future[string] {.async.} =
-  var client = newAsyncHttpClient()
+proc extractBetween(text: string, tbegin: string, tend: string, pos = 0): string =
   try:
-    result = await client.getContent(url)
+    var start_pos = text.find(tbegin, pos) + tbegin.len
+    var end_pos = text.find(tend, start_pos)
+    result = text[start_pos ..< end_pos]
+  except:
+    result = ""
+
+proc syncGetUrl*(client: BooruClient, url: string): string =
+  var wclient = newHttpClient()
+  try:
+    result = wclient.getContent(url)
+  except CatchableError as e:
+    raise newException(BooruError, "Failed fetching from the API: " & e.msg)
+
+proc asyncGetUrl*(client: BooruClient, url: string): Future[string] {.async.} =
+  var wclient = newAsyncHttpClient()
+  try:
+    result = await wclient.getContent(url)
   except CatchableError as e:
     raise newException(BooruError, "Failed fetching from the API: " & e.msg)
 
@@ -28,7 +43,7 @@ proc prepareEndpoint*(client: BooruClient): string =
         result &= "&api_key=" & client.apiKey.get()
       if client.userdId.isSome:
         result &= "&user_id=" & client.userdId.get()
-    of E621:
+    of Danbooru, E621:
       if client.userdId.isSome:
         result &= "?login=" & client.userdId.get()
       if client.apiKey.isSome:
@@ -83,12 +98,10 @@ proc processPost*(client: BooruClient, cont: string): JsonNode =
       result = resp
     of Yandare, Konachan:
       # why isn't there an API endpoint?
-      var start_pos = cont.find("Post.register_resp")
-      if start_pos == -1:
+      var raw = cont.extractBetween("Post.register_resp(", "); </script>")
+      if raw == "":
         raise newException(BooruNotFoundError, "Post not found")
-      var end_pos = cont.find("</script>", start_pos)
-      var resp = cont[start_pos + 19 ..< end_pos - 3].parseJson()
-      result = resp["posts"].getElems()[0]
+      result = parseJson(raw)["posts"].getElems()[0]
     of E621:
       var resp = parseJson(cont)
       if resp.hasKey("success"):
