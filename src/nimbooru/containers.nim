@@ -114,7 +114,7 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
         result.status = img["media_asset"]["status"].getStr()
         result.locked = img["is_banned"].getBool()
         result.score = img["score"].getInt()
-      of Yandare, Konachan:
+      of Yandere, Konachan:
         result.id = $img["id"].getInt()
         if img.hasKey("creator_id"):
           result.creator_id = some $img["creator_id"].getInt()

@@ -69,7 +69,7 @@ proc prepareGetPost*(client: BooruClient, id: string, url: string): string =
       result &= "&id=" & id
     of Danbooru, E621:
       result &= "posts/" & id & ".json"
-    of Yandare, Konachan:
+    of Yandere, Konachan:
       result &= "post/show/" & id
 
 proc processPost*(client: BooruClient, cont: string): JsonNode =
@@ -96,7 +96,7 @@ proc processPost*(client: BooruClient, cont: string): JsonNode =
         if not resp["success"].getBool():
           raise newException(BooruNotFoundError, "Post not found")
       result = resp
-    of Yandare, Konachan:
+    of Yandere, Konachan:
       # why isn't there an API endpoint?
       var raw = cont.extractBetween("Post.register_resp(", "); </script>")
       if raw == "":
@@ -127,7 +127,7 @@ proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Optio
       result &= "&page=" & $page
       if formatted_tags.len > 0:
         result &= "&tags=" & formatted_tags.join(" ")
-    of Yandare, Konachan:
+    of Yandere, Konachan:
       result &= "post.json"
       result &= "?limit=" & $limit
       result &= "&page=" & $page
@@ -145,7 +145,7 @@ proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
         raise newException(BooruNotFoundError, "No posts not found")
       for p in resp["post"].getElems():
         result &= initBooruImage(client, p)
-    of Safebooru, Danbooru, Yandare, Konachan:
+    of Safebooru, Danbooru, Yandere, Konachan:
       var elems = resp.getElems()
       if elems.len == 0:
         # Danbooru, Yandare, Konachan

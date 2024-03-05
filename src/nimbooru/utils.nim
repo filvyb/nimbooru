@@ -7,6 +7,6 @@ type
     Gelbooru = "https://gelbooru.com/"
     Safebooru = "https://safebooru.org/"
     Danbooru = "https://danbooru.donmai.us/"
-    Yandare = "https://yande.re/"
+    Yandere = "https://yande.re/"
     Konachan = "https://konachan.com/"
     E621 = "https://e621.net/"
