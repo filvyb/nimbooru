@@ -91,12 +91,15 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
         result.parent_id = $img["parent_id"].getInt(0)
         if img.hasKey("created_at"):
           result.created_at = some parse(img["created_at"].getStr(), "YYYY-MM-dd'T'HH:mm:ss'.'fffzzz")
-        result.file_url = img["file_url"].getStr()
-        result.preview_url = img["preview_file_url"].getStr()
-        result.filename = result.file_url.rsplit({'/'}, maxsplit=1)[1]
+        if img.hasKey("file_url"):
+          result.file_url = img["file_url"].getStr()
+          result.filename = result.file_url.rsplit({'/'}, maxsplit=1)[1]
+        if img.hasKey("preview_file_url"):
+          result.preview_url = img["preview_file_url"].getStr()
         if img.hasKey("source"):
           result.source = some img["source"].getStr()
-        result.hash = img["md5"].getStr()
+        if img.hasKey("md5"):          
+          result.hash = img["md5"].getStr()
         result.height = img["image_height"].getInt()
         result.width = img["image_width"].getInt()
         result.rating = img["rating"].getStr()
