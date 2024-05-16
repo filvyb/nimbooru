@@ -9,7 +9,7 @@ import utils
 type
   BooruClient* = object
     apiKey*: Option[string]
-    userdId*: Option[string]
+    userId*: Option[string]
     site*: Option[Boorus]
     customApi*: Option[string]
   BooruImage* = object

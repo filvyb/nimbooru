@@ -9,13 +9,13 @@ import containers
 proc initBooruClient*(site: Boorus, apiKey = none string, userId = none string): BooruClient =
   ## Initialize BooruClient to use one of the supported boorus
   result.apiKey = apiKey
-  result.userdId = userId
+  result.userId = userId
   result.site = some site
 
 proc initBooruClient*(site_url: string, site: Boorus, apiKey = none string, userId = none string): BooruClient =
   ## Initialize BooruClient to use a custom endpoint, use site argument to pick an API version
   result.apiKey = apiKey
-  result.userdId = userId
+  result.userId = userId
   result.site = some site
   result.customApi = some site_url
 

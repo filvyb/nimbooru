@@ -41,11 +41,11 @@ proc prepareEndpoint*(client: BooruClient): string =
       result &= "index.php?page=dapi&q=index&json=1"
       if client.apiKey.isSome:
         result &= "&api_key=" & client.apiKey.get()
-      if client.userdId.isSome:
-        result &= "&user_id=" & client.userdId.get()
+      if client.userId.isSome:
+        result &= "&user_id=" & client.userId.get()
     of Danbooru, E621:
-      if client.userdId.isSome:
-        result &= "?login=" & client.userdId.get()
+      if client.userId.isSome:
+        result &= "?login=" & client.userId.get()
       if client.apiKey.isSome:
         result &= "&api_key=" & client.apiKey.get()
     else:
