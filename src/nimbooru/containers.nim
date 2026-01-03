@@ -8,11 +8,15 @@ import utils
 
 type
   BooruClient* = object
-    apiKey*: Option[string]
-    userId*: Option[string]
-    site*: Option[Boorus]
-    customApi*: Option[string]
+    ## Client configuration for connecting to a booru API.
+    ## Use initBooruClient() to create instances.
+    apiKey*: Option[string]      ## API key for authenticated requests
+    userId*: Option[string]      ## User ID for authenticated requests
+    site*: Option[Boorus]        ## The booru site to query
+    customApi*: Option[string]   ## Custom API endpoint URL (overrides default)
+
   BooruImage* = object
+    ## Represents a single image post from a booru.
     id*: string
     creator_id*: Option[string]
     parent_id*: string
@@ -38,6 +42,8 @@ type
     #raw*: JsonNode
 
 proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
+  ## Constructs a BooruImage from raw JSON response data.
+  ## Handles site-specific JSON formats for each supported booru.
   if client.customApi.isNone:
     var b = client.site.get()
     case b:
@@ -157,8 +163,7 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
         result.height = img["file"]["height"].getInt()
         result.width = img["file"]["width"].getInt()
         result.rating = img["rating"].getStr()
-        if img["comment_count"].getInt() != 0:
-          result.has_comments = false
+        result.has_comments = img["comment_count"].getInt() > 0
         result.has_notes = img["has_notes"].getBool()
         result.has_children = img["relationships"]["has_children"].getBool()
         var tags = img["tags"]

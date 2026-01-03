@@ -8,6 +8,8 @@ import containers
 import utils
 
 proc extractBetween(text: string, tbegin: string, tend: string, pos = 0): string =
+  ## Extracts text between two delimiters.
+  ## Returns empty string if delimiters are not found.
   try:
     var start_pos = text.find(tbegin, pos) + tbegin.len
     var end_pos = text.find(tend, start_pos)
@@ -15,26 +17,39 @@ proc extractBetween(text: string, tbegin: string, tend: string, pos = 0): string
   except:
     result = ""
 
-proc syncGetUrl*(client: BooruClient, url: string): string =
-  var wclient = newHttpClient()
+const DefaultTimeout* = 30000 ## Default HTTP timeout in milliseconds (30 seconds)
+
+proc syncGetUrl*(client: BooruClient, url: string, timeout = DefaultTimeout): string =
+  ## Fetches content from a URL synchronously.
+  ## Raises BooruError if the request fails or times out.
+  var wclient = newHttpClient(timeout = timeout)
+  defer: wclient.close()
   try:
     result = wclient.getContent(url)
   except CatchableError as e:
     raise newException(BooruError, "Failed fetching from the API: " & e.msg)
 
-proc asyncGetUrl*(client: BooruClient, url: string): Future[string] {.async.} =
+proc asyncGetUrl*(client: BooruClient, url: string, timeout = DefaultTimeout): Future[string] {.async.} =
+  ## Fetches content from a URL asynchronously.
+  ## Raises BooruError if the request fails or times out.
   var wclient = newAsyncHttpClient()
+  defer: wclient.close()
   try:
     result = await wclient.getContent(url)
   except CatchableError as e:
     raise newException(BooruError, "Failed fetching from the API: " & e.msg)
 
 proc prepareEndpoint*(client: BooruClient): string =
+  ## Constructs the base API endpoint URL for the given client.
+  ## Uses customApi if provided, otherwise uses the default endpoint for the site.
+  if client.site.isNone:
+    raise newException(BooruError, "BooruClient must have a site set")
+
   if client.customApi.isSome:
     result &= client.customApi.get()
   else:
     result &= $client.site.get()
-  
+
   var b = client.site.get()
   case b:
     of Gelbooru, Safebooru:  
@@ -52,6 +67,8 @@ proc prepareEndpoint*(client: BooruClient): string =
       return
 
 proc formatTags(tags: Option[seq[string]], exclude_tags: Option[seq[string]]): seq[string] =
+  ## Normalizes tags for API queries: lowercases, replaces spaces with underscores,
+  ## and prefixes excluded tags with '-'.
   if tags.isSome:
     for tag in tags.get():
       result &= tag.strip().toLower().replace(" ", "_")
@@ -60,6 +77,7 @@ proc formatTags(tags: Option[seq[string]], exclude_tags: Option[seq[string]]): s
       result &= "-" & tag.strip().strip(chars = {'-'}).toLower().replace(" ", "_")
 
 proc prepareGetPost*(client: BooruClient, id: string, url: string): string =
+  ## Builds the URL for fetching a single post by ID.
   result &= url
 
   var b = client.site.get()
@@ -73,6 +91,8 @@ proc prepareGetPost*(client: BooruClient, id: string, url: string): string =
       result &= "post/show/" & id
 
 proc processPost*(client: BooruClient, cont: string): JsonNode =
+  ## Parses a single post response from the API.
+  ## Raises BooruNotFoundError if the post doesn't exist.
   if cont.len == 0:
     raise newException(BooruNotFoundError, "Post not found")
 
@@ -110,6 +130,7 @@ proc processPost*(client: BooruClient, cont: string): JsonNode =
       result = resp["post"]
 
 proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Option[seq[string]], exclude_tags: Option[seq[string]], url: string): string =
+  ## Builds the URL for searching posts with pagination and tag filters.
   let formatted_tags = formatTags(tags, exclude_tags)
   result &= url
 
@@ -135,6 +156,8 @@ proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Optio
         result &= "&tags=" & formatted_tags.join(" ")
 
 proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
+  ## Parses search results and returns a sequence of BooruImage objects.
+  ## Raises BooruNotFoundError if no posts match the search.
   var resp = parseJson(cont)
 
   var b = client.site.get()
@@ -142,7 +165,7 @@ proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
     of Gelbooru:
       var count = resp["@attributes"]["count"].getInt()
       if count == 0:
-        raise newException(BooruNotFoundError, "No posts not found")
+        raise newException(BooruNotFoundError, "No posts found")
       for p in resp["post"].getElems():
         result &= initBooruImage(client, p)
     of Safebooru, Danbooru, Yandere, Konachan:
