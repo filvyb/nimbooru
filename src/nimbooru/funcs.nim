@@ -17,58 +17,38 @@ proc extractBetween(text: string, tbegin: string, tend: string, pos = 0): string
   except:
     result = ""
 
-const DefaultTimeout* = 30000 ## Default HTTP timeout in milliseconds (30 seconds)
-
-proc syncGetUrl*(client: BooruClient, url: string, timeout = DefaultTimeout): string =
+proc syncGetUrl*(client: BooruClient, url: string): string =
   ## Fetches content from a URL synchronously.
-  var wclient = newHttpClient(timeout = timeout)
+  var wclient = newHttpClient(timeout = client.timeout)
   defer: wclient.close()
+  wclient.headers = newHttpHeaders({"User-Agent": client.userAgent})
   case client.site.get():
     of Sankaku:
-      wclient.headers = newHttpHeaders({
-        "Accept": "application/vnd.sankaku.api+json;v=2",
-        "Origin": "https://sankaku.app",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-      })
+      wclient.headers["Accept"] = "application/vnd.sankaku.api+json;v=2"
+      wclient.headers["Origin"] = "https://sankaku.app"
     of IdolComplex:
-      wclient.headers = newHttpHeaders({
-        "Accept": "application/vnd.sankaku.api+json;v=2",
-        "Origin": "https://www.idolcomplex.com",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-      })
-    of Zerochan:
-      wclient.headers = newHttpHeaders({
-        "User-Agent": "Nimbooru - API client"
-      })
-    of Gelbooru, Safebooru, Danbooru, Yandere, Konachan, E621:
+      wclient.headers["Accept"] = "application/vnd.sankaku.api+json;v=2"
+      wclient.headers["Origin"] = "https://www.idolcomplex.com"
+    of Zerochan, Gelbooru, Safebooru, Danbooru, Yandere, Konachan, E621:
       discard
   try:
     result = wclient.getContent(url)
   except CatchableError as e:
     raise newException(BooruError, "Failed fetching from the API: " & e.msg)
 
-proc asyncGetUrl*(client: BooruClient, url: string, timeout = DefaultTimeout): Future[string] {.async.} =
+proc asyncGetUrl*(client: BooruClient, url: string): Future[string] {.async.} =
   ## Fetches content from a URL asynchronously.
   var wclient = newAsyncHttpClient()
   defer: wclient.close()
+  wclient.headers = newHttpHeaders({"User-Agent": client.userAgent})
   case client.site.get():
     of Sankaku:
-      wclient.headers = newHttpHeaders({
-        "Accept": "application/vnd.sankaku.api+json;v=2",
-        "Origin": "https://sankaku.app",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-      })
+      wclient.headers["Accept"] = "application/vnd.sankaku.api+json;v=2"
+      wclient.headers["Origin"] = "https://sankaku.app"
     of IdolComplex:
-      wclient.headers = newHttpHeaders({
-        "Accept": "application/vnd.sankaku.api+json;v=2",
-        "Origin": "https://www.idolcomplex.com",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-      })
-    of Zerochan:
-      wclient.headers = newHttpHeaders({
-        "User-Agent": "Nimbooru - API client"
-      })
-    of Gelbooru, Safebooru, Danbooru, Yandere, Konachan, E621:
+      wclient.headers["Accept"] = "application/vnd.sankaku.api+json;v=2"
+      wclient.headers["Origin"] = "https://www.idolcomplex.com"
+    of Zerochan, Gelbooru, Safebooru, Danbooru, Yandere, Konachan, E621:
       discard
   try:
     result = await wclient.getContent(url)

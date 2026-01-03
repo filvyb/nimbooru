@@ -5,7 +5,6 @@ import std/strutils
 
 import utils
 
-
 type
   BooruClient* = object
     ## Client configuration for connecting to a booru API.
@@ -14,6 +13,8 @@ type
     userId*: Option[string]      ## User ID for authenticated requests
     site*: Option[Boorus]        ## The booru site to query
     customApi*: Option[string]   ## Custom API endpoint URL (overrides default)
+    timeout*: int                ## Request timeout in seconds (default: 30 seconds)
+    userAgent*: string           ## User agent string for HTTP requests (default: "Nimbooru - API client")
 
   BooruImage* = object
     ## Represents a single image post from a booru.

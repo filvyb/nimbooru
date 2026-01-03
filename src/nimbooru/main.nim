@@ -5,18 +5,22 @@ import utils
 import funcs
 import containers
 
-proc initBooruClient*(site: Boorus, apiKey = none string, userId = none string): BooruClient =
+proc initBooruClient*(site: Boorus, apiKey = none string, userId = none string, timeout = 30000): BooruClient =
   ## Initialize BooruClient to use one of the supported boorus
   result.apiKey = apiKey
   result.userId = userId
   result.site = some site
+  result.timeout = timeout
+  result.userAgent = "Nimbooru - API client"
 
-proc initBooruClient*(site_url: string, site: Boorus, apiKey = none string, userId = none string): BooruClient =
+proc initBooruClient*(site_url: string, site: Boorus, apiKey = none string, userId = none string, timeout = 30000): BooruClient =
   ## Initialize BooruClient to use a custom endpoint, use site argument to pick an API version
   result.apiKey = apiKey
   result.userId = userId
   result.site = some site
   result.customApi = some site_url
+  result.timeout = timeout
+  result.userAgent = "Nimbooru - API client"
 
 proc getPost*(client: BooruClient, id: string): BooruImage = 
   ## Get a single post from a post id
