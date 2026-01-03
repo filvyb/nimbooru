@@ -36,6 +36,10 @@ proc syncGetUrl*(client: BooruClient, url: string, timeout = DefaultTimeout): st
         "Origin": "https://www.idolcomplex.com",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
       })
+    of Zerochan:
+      wclient.headers = newHttpHeaders({
+        "User-Agent": "Nimbooru - API client"
+      })
     of Gelbooru, Safebooru, Danbooru, Yandere, Konachan, E621:
       discard
   try:
@@ -59,6 +63,10 @@ proc asyncGetUrl*(client: BooruClient, url: string, timeout = DefaultTimeout): F
         "Accept": "application/vnd.sankaku.api+json;v=2",
         "Origin": "https://www.idolcomplex.com",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      })
+    of Zerochan:
+      wclient.headers = newHttpHeaders({
+        "User-Agent": "Nimbooru - API client"
       })
     of Gelbooru, Safebooru, Danbooru, Yandere, Konachan, E621:
       discard
@@ -91,7 +99,7 @@ proc prepareEndpoint*(client: BooruClient): string =
         result &= "?login=" & client.userId.get()
       if client.apiKey.isSome:
         result &= "&api_key=" & client.apiKey.get()
-    of Yandere, Konachan, Sankaku, IdolComplex:
+    of Yandere, Konachan, Sankaku, IdolComplex, Zerochan:
       return
 
 proc formatTags(tags: Option[seq[string]], exclude_tags: Option[seq[string]]): seq[string] =
@@ -120,6 +128,8 @@ proc prepareGetPost*(client: BooruClient, id: string, url: string): string =
     of Sankaku, IdolComplex:
       let prefix = if id.len == 32: "md5:" else: "id_range:"
       result &= "v2/posts?lang=en&page=1&limit=1&tags=" & prefix & id
+    of Zerochan:
+      result &= id & "?json"
 
 proc processPost*(client: BooruClient, cont: string): JsonNode =
   ## Parses a single post response from the API.
@@ -164,6 +174,11 @@ proc processPost*(client: BooruClient, cont: string): JsonNode =
       if elems.len == 0:
         raise newException(BooruNotFoundError, "Post not found")
       result = elems[0]
+    of Zerochan:
+      var resp = parseJson(cont)
+      if not resp.hasKey("id"):
+        raise newException(BooruNotFoundError, "Post not found")
+      result = resp
 
 proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Option[seq[string]], exclude_tags: Option[seq[string]], url: string): string =
   ## Builds the URL for searching posts with pagination and tag filters.
@@ -197,6 +212,15 @@ proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Optio
       result &= "&page=" & $page
       if formatted_tags.len > 0:
         result &= "&tags=" & formatted_tags.join(" ")
+    of Zerochan:
+      if tags.isSome and tags.get().len > 0:
+        var zerochanTags: seq[string]
+        for tag in tags.get():
+          zerochanTags &= tag.strip().replace(" ", "+")
+        result &= zerochanTags.join(",").replace("_", "+")
+      result &= "?json"
+      result &= "&l=" & $limit
+      result &= "&p=" & $page
 
 proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
   ## Parses search results and returns a sequence of BooruImage objects.
@@ -229,6 +253,14 @@ proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
         result &= initBooruImage(client, p)
     of Sankaku, IdolComplex:
       var elems = resp.getElems()
+      if elems.len == 0:
+        raise newException(BooruNotFoundError, "Post not found")
+      for p in elems:
+        result &= initBooruImage(client, p)
+    of Zerochan:
+      if not resp.hasKey("items"):
+        raise newException(BooruNotFoundError, "Post not found")
+      var elems = resp["items"].getElems()
       if elems.len == 0:
         raise newException(BooruNotFoundError, "Post not found")
       for p in elems:

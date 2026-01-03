@@ -10,3 +10,4 @@ Basic wrapper for searching and retrieving posts from various Boorus
 * Konachan
 * e621
 * Sankaku/Idol Complex
+* Zerochan

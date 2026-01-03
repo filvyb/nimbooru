@@ -227,6 +227,35 @@ suite "IdolComplex":
     let posts = waitFor client.asyncSearchPosts(limit = 10)
     check posts.len > 0
 
+suite "Zerochan":
+  var client = initBooruClient(Zerochan)
+
+  test "searchPosts returns posts":
+    let posts = client.searchPosts(limit = 10)
+    check posts.len == 10
+
+  test "searchPosts with pagination":
+    let page0 = client.searchPosts(limit = 5, page = 1)
+    let page1 = client.searchPosts(limit = 5, page = 2)
+    check page0.len == 5
+    check page1.len == 5
+    check page0[0].id != page1[0].id
+
+  test "searchPosts with tags":
+    let posts = client.searchPosts(limit = 5, tags = some @["Genshin Impact"])
+    check posts.len > 0
+
+  test "getPost returns valid image":
+    let posts = client.searchPosts(limit = 1)
+    let post = client.getPost(posts[0].id)
+    check post.id == posts[0].id
+    check post.tags.len > 0
+    check post.file_url != ""  # Single post should have full URL
+
+  test "asyncSearchPosts returns posts":
+    let posts = waitFor client.asyncSearchPosts(limit = 10)
+    check posts.len == 10
+
 suite "Error handling":
   test "missing site raises error":
     var client: BooruClient

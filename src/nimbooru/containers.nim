@@ -237,6 +237,32 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
                 result.tags &= tag
         result.status = img["status"].getStr("active")
         result.score = img["total_score"].getInt(0)
+      of Zerochan:
+        result.id = $img["id"].getInt()
+        result.height = img["height"].getInt()
+        result.width = img["width"].getInt()
+        if img.hasKey("full"):
+          result.file_url = img["full"].getStr()
+        elif img.hasKey("large"):
+          result.file_url = img["large"].getStr()
+        if img.hasKey("medium"):
+          result.preview_url = img["medium"].getStr()
+        elif img.hasKey("thumbnail"):
+          result.preview_url = img["thumbnail"].getStr()
+        if result.file_url != "":
+          result.filename = result.file_url.rsplit({'/'}, maxsplit=1)[1]
+        if img.hasKey("hash"):
+          result.hash = img["hash"].getStr()
+        elif img.hasKey("md5"):
+          result.hash = img["md5"].getStr()
+        if img.hasKey("source"):
+          result.source = some img["source"].getStr()
+        # Zerochan has no rating system - default to "s" (safe)
+        result.rating = "s"
+        result.status = "active"
+        if img.hasKey("tags"):
+          for t in img["tags"].getElems():
+            result.tags &= t.getStr()
 
 proc `$`*(img: BooruImage): string =
   ## Returns a formatted, human-readable string representation of a BooruImage.
