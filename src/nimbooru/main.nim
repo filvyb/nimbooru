@@ -1,5 +1,6 @@
 import std/options
 import std/asyncdispatch
+import std/os
 
 import utils
 import funcs
@@ -34,7 +35,16 @@ proc searchPosts*(client: BooruClient, limit = 100, page = 0, tags = none seq[st
   var base_url = prepareEndpoint(client)
   base_url = prepareSearchPosts(client, limit, page, tags, exclude_tags, base_url)
   var cont = client.syncGetUrl(base_url)
-  result = client.processSearchPosts(cont)
+  if client.site.get() == Rule34Paheal:
+    let ids = parseRule34PostIds(cont)
+    for i, id in ids:
+      if i >= limit:
+        break
+      if i > 0:
+        sleep(500)
+      result.add(client.getPost(id))
+  else:
+    result = client.processSearchPosts(cont)
 
 proc asyncGetPost*(client: BooruClient, id: string): Future[BooruImage] {.async.} = 
   ## Get a single post from a post id
@@ -48,4 +58,13 @@ proc asyncSearchPosts*(client: BooruClient, limit = 100, page = 0, tags = none s
   var base_url = prepareEndpoint(client)
   base_url = prepareSearchPosts(client, limit, page, tags, exclude_tags, base_url)
   var cont = await client.asyncGetUrl(base_url)
-  result = client.processSearchPosts(cont)
+  if client.site.get() == Rule34Paheal:
+    let ids = parseRule34PostIds(cont)
+    for i, id in ids:
+      if i >= limit:
+        break
+      if i > 0:
+        await sleepAsync(500)
+      result.add(await client.asyncGetPost(id))
+  else:
+    result = client.processSearchPosts(cont)

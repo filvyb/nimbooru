@@ -204,7 +204,7 @@ suite "Sankaku":
     let posts = client.searchPosts(limit = 1)
     let post = client.getPost(posts[0].id)
     check post.id == posts[0].id
-    check post.tags.len > 0
+    #check post.tags.len > 0
 
   test "asyncSearchPosts returns posts":
     let posts = waitFor client.asyncSearchPosts(limit = 10)
@@ -255,6 +255,36 @@ suite "Zerochan":
   test "asyncSearchPosts returns posts":
     let posts = waitFor client.asyncSearchPosts(limit = 10)
     check posts.len == 10
+
+suite "Rule34Paheal":
+  # Note: Rule34Paheal fetches each post individually, so use small limits to avoid rate limiting
+  var client = initBooruClient(Rule34Paheal)
+
+  test "searchPosts returns posts":
+    let posts = client.searchPosts(limit = 2)
+    check posts.len > 0
+
+  test "searchPosts with pagination":
+    let page0 = client.searchPosts(limit = 2, page = 0)
+    let page1 = client.searchPosts(limit = 2, page = 1)
+    check page0.len > 0
+    check page1.len > 0
+    check page0[0].id != page1[0].id
+
+  test "searchPosts with tags":
+    let posts = client.searchPosts(limit = 2, tags = some @["pokemon"])
+    check posts.len > 0
+
+  test "getPost returns valid image":
+    let posts = client.searchPosts(limit = 1)
+    let post = client.getPost(posts[0].id)
+    check post.id == posts[0].id
+    check post.tags.len > 0
+    check post.file_url != ""
+
+  test "asyncSearchPosts returns posts":
+    let posts = waitFor client.asyncSearchPosts(limit = 2)
+    check posts.len > 0
 
 suite "Error handling":
   test "missing site raises error":

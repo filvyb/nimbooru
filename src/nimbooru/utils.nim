@@ -13,3 +13,4 @@ type
     Sankaku = "https://sankakuapi.com/"
     IdolComplex = "https://i.sankakuapi.com/"
     Zerochan = "https://www.zerochan.net/"
+    Rule34Paheal = "https://rule34.paheal.net/"

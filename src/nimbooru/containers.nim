@@ -264,6 +264,28 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
         if img.hasKey("tags"):
           for t in img["tags"].getElems():
             result.tags &= t.getStr()
+      of Rule34Paheal:
+        result.id = img["id"].getStr()
+        result.height = img["height"].getInt()
+        result.width = img["width"].getInt()
+        result.file_url = img["file_url"].getStr()
+        if result.file_url != "":
+          let parts = result.file_url.rsplit({'/'}, maxsplit=1)
+          if parts.len > 1:
+            result.filename = parts[1]
+          else:
+            result.filename = parts[0]
+        if img.hasKey("md5"):
+          result.hash = img["md5"].getStr()
+        if img.hasKey("tags"):
+          result.tags = img["tags"].getStr().split(" ")
+        if img.hasKey("locked"):
+          result.locked = img["locked"].getBool()
+        if img.hasKey("has_comments"):
+          result.has_comments = img["has_comments"].getBool()
+        # Rule34 has no rating system - default to "e" (explicit)
+        result.rating = "e"
+        result.status = "active"
 
 proc `$`*(img: BooruImage): string =
   ## Returns a formatted, human-readable string representation of a BooruImage.

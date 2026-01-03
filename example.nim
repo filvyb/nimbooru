@@ -30,3 +30,5 @@ b.site = some Zerochan
 echo (waitFor b.asyncSearchPosts()).len
 #echo waitFor b.asyncGetPost("3793685")
 #echo waitFor b.asyncSearchPosts(limit = 2, tags = some @["gold eyes"])
+#b.site = some Rule34Paheal
+#echo waitFor b.asyncSearchPosts(limit = 2)
