@@ -210,6 +210,23 @@ suite "Sankaku":
     let posts = waitFor client.asyncSearchPosts(limit = 10)
     check posts.len == 10
 
+suite "IdolComplex":
+  var client = initBooruClient(IdolComplex)
+
+  test "searchPosts returns posts":
+    let posts = client.searchPosts(limit = 10)
+    check posts.len > 0
+
+  test "getPost returns valid image":
+    let posts = client.searchPosts(limit = 1)
+    let post = client.getPost(posts[0].id)
+    check post.id == posts[0].id
+    check post.tags.len > 0
+
+  test "asyncSearchPosts returns posts":
+    let posts = waitFor client.asyncSearchPosts(limit = 10)
+    check posts.len > 0
+
 suite "Error handling":
   test "missing site raises error":
     var client: BooruClient

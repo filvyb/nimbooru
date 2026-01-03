@@ -1,6 +1,5 @@
 import std/options
 import std/asyncdispatch
-import std/json
 
 import utils
 import funcs

@@ -187,7 +187,7 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
         result.change = parseTime(img["updated_at"].getStr(), "yyyy-MM-dd'T'HH:mm:ss'.'fffzzz", utc())
         result.locked = img["flags"]["status_locked"].getBool()
         result.score = img["score"]["total"].getInt()
-      of Sankaku:
+      of Sankaku, IdolComplex:
         result.id = img["id"].getStr()
         if img.hasKey("author") and img["author"].kind == JObject:
           if img["author"].hasKey("id"):
@@ -237,3 +237,35 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
                 result.tags &= tag
         result.status = img["status"].getStr("active")
         result.score = img["total_score"].getInt(0)
+
+proc `$`*(img: BooruImage): string =
+  ## Returns a formatted, human-readable string representation of a BooruImage.
+  result = "BooruImage:\n"
+  result &= "  ID:           " & img.id & "\n"
+  if img.creator_id.isSome:
+    result &= "  Creator ID:   " & img.creator_id.get() & "\n"
+  if img.parent_id != "" and img.parent_id != "0":
+    result &= "  Parent ID:    " & img.parent_id & "\n"
+  if img.created_at.isSome:
+    result &= "  Created:      " & img.created_at.get().format("yyyy-MM-dd HH:mm:ss") & "\n"
+  result &= "  Dimensions:   " & $img.width & "x" & $img.height & "\n"
+  result &= "  Score:        " & $img.score & "\n"
+  result &= "  Rating:       " & img.rating & "\n"
+  result &= "  Status:       " & img.status & "\n"
+  if img.locked:
+    result &= "  Locked:       yes\n"
+  if img.file_url != "":
+    result &= "  File URL:     " & img.file_url & "\n"
+  if img.preview_url != "":
+    result &= "  Preview URL:  " & img.preview_url & "\n"
+  if img.filename != "":
+    result &= "  Filename:     " & img.filename & "\n"
+  if img.hash != "":
+    result &= "  Hash (MD5):   " & img.hash & "\n"
+  if img.source.isSome and img.source.get() != "":
+    result &= "  Source:       " & img.source.get() & "\n"
+  result &= "  Has Comments: " & $img.has_comments & "\n"
+  result &= "  Has Notes:    " & $img.has_notes & "\n"
+  result &= "  Has Children: " & $img.has_children & "\n"
+  if img.tags.len > 0:
+    result &= "  Tags (" & $img.tags.len & "):    " & img.tags.join(", ") & "\n"

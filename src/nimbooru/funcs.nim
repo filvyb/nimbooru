@@ -30,6 +30,12 @@ proc syncGetUrl*(client: BooruClient, url: string, timeout = DefaultTimeout): st
         "Origin": "https://sankaku.app",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
       })
+    of IdolComplex:
+      wclient.headers = newHttpHeaders({
+        "Accept": "application/vnd.sankaku.api+json;v=2",
+        "Origin": "https://www.idolcomplex.com",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      })
     of Gelbooru, Safebooru, Danbooru, Yandere, Konachan, E621:
       discard
   try:
@@ -46,6 +52,12 @@ proc asyncGetUrl*(client: BooruClient, url: string, timeout = DefaultTimeout): F
       wclient.headers = newHttpHeaders({
         "Accept": "application/vnd.sankaku.api+json;v=2",
         "Origin": "https://sankaku.app",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      })
+    of IdolComplex:
+      wclient.headers = newHttpHeaders({
+        "Accept": "application/vnd.sankaku.api+json;v=2",
+        "Origin": "https://www.idolcomplex.com",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
       })
     of Gelbooru, Safebooru, Danbooru, Yandere, Konachan, E621:
@@ -79,7 +91,7 @@ proc prepareEndpoint*(client: BooruClient): string =
         result &= "?login=" & client.userId.get()
       if client.apiKey.isSome:
         result &= "&api_key=" & client.apiKey.get()
-    of Yandere, Konachan, Sankaku:
+    of Yandere, Konachan, Sankaku, IdolComplex:
       return
 
 proc formatTags(tags: Option[seq[string]], exclude_tags: Option[seq[string]]): seq[string] =
@@ -105,7 +117,7 @@ proc prepareGetPost*(client: BooruClient, id: string, url: string): string =
       result &= "posts/" & id & ".json"
     of Yandere, Konachan:
       result &= "post/show/" & id
-    of Sankaku:
+    of Sankaku, IdolComplex:
       let prefix = if id.len == 32: "md5:" else: "id_range:"
       result &= "v2/posts?lang=en&page=1&limit=1&tags=" & prefix & id
 
@@ -146,7 +158,7 @@ proc processPost*(client: BooruClient, cont: string): JsonNode =
         if not resp["success"].getBool():
           raise newException(BooruNotFoundError, "Post not found")
       result = resp["post"]
-    of Sankaku:
+    of Sankaku, IdolComplex:
       var resp = parseJson(cont)
       var elems = resp.getElems()
       if elems.len == 0:
@@ -178,7 +190,7 @@ proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Optio
       result &= "&page=" & $page
       if formatted_tags.len > 0:
         result &= "&tags=" & formatted_tags.join(" ")
-    of Sankaku:
+    of Sankaku, IdolComplex:
       result &= "v2/posts"
       result &= "?lang=en"
       result &= "&limit=" & $limit
@@ -215,7 +227,7 @@ proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
         raise newException(BooruNotFoundError, "Post not found")
       for p in elems:
         result &= initBooruImage(client, p)
-    of Sankaku:
+    of Sankaku, IdolComplex:
       var elems = resp.getElems()
       if elems.len == 0:
         raise newException(BooruNotFoundError, "Post not found")

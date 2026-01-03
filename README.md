@@ -9,3 +9,4 @@ Basic wrapper for searching and retrieving posts from various Boorus
 * Yandare
 * Konachan
 * e621
+* Sankaku/Idol Complex

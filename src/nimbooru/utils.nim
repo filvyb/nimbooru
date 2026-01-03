@@ -11,3 +11,4 @@ type
     Konachan = "https://konachan.com/"
     E621 = "https://e621.net/"
     Sankaku = "https://sankakuapi.com/"
+    IdolComplex = "https://i.sankakuapi.com/"

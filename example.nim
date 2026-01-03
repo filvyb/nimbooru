@@ -2,7 +2,7 @@ import std/asyncdispatch
 import src/nimbooru
 import std/options
 
-var b = initBooruClient(Gelbooru)
+var b = initBooruClient(Sankaku)
 #echo waitFor b.asyncGetPost("8967426")
 #echo waitFor b.asyncGetPost("4508744")
 #echo waitFor b.asyncGetPost("6666259")
@@ -10,6 +10,8 @@ var b = initBooruClient(Gelbooru)
 #echo waitFor b.asyncGetPost("362603")
 #echo waitFor b.asyncGetPost("4290112")
 #echo waitFor b.asyncSearchPosts(limit = 2, tags = some @["open mouth"])
+#echo waitFor b.asyncSearchPosts(limit = 5)
+#echo waitFor b.asyncGetPost("8JaG6xN5OML")
 echo (waitFor b.asyncSearchPosts()).len
 #echo waitFor b.asyncSearchPosts(limit = 2, tags = some @["open mouth"], exclude_tags = some @["yellow_eyes"])
 b.site = some Safebooru
