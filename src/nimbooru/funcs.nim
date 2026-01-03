@@ -21,9 +21,17 @@ const DefaultTimeout* = 30000 ## Default HTTP timeout in milliseconds (30 second
 
 proc syncGetUrl*(client: BooruClient, url: string, timeout = DefaultTimeout): string =
   ## Fetches content from a URL synchronously.
-  ## Raises BooruError if the request fails or times out.
   var wclient = newHttpClient(timeout = timeout)
   defer: wclient.close()
+  case client.site.get():
+    of Sankaku:
+      wclient.headers = newHttpHeaders({
+        "Accept": "application/vnd.sankaku.api+json;v=2",
+        "Origin": "https://sankaku.app",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      })
+    of Gelbooru, Safebooru, Danbooru, Yandere, Konachan, E621:
+      discard
   try:
     result = wclient.getContent(url)
   except CatchableError as e:
@@ -31,9 +39,17 @@ proc syncGetUrl*(client: BooruClient, url: string, timeout = DefaultTimeout): st
 
 proc asyncGetUrl*(client: BooruClient, url: string, timeout = DefaultTimeout): Future[string] {.async.} =
   ## Fetches content from a URL asynchronously.
-  ## Raises BooruError if the request fails or times out.
   var wclient = newAsyncHttpClient()
   defer: wclient.close()
+  case client.site.get():
+    of Sankaku:
+      wclient.headers = newHttpHeaders({
+        "Accept": "application/vnd.sankaku.api+json;v=2",
+        "Origin": "https://sankaku.app",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      })
+    of Gelbooru, Safebooru, Danbooru, Yandere, Konachan, E621:
+      discard
   try:
     result = await wclient.getContent(url)
   except CatchableError as e:
@@ -52,7 +68,7 @@ proc prepareEndpoint*(client: BooruClient): string =
 
   var b = client.site.get()
   case b:
-    of Gelbooru, Safebooru:  
+    of Gelbooru, Safebooru:
       result &= "index.php?page=dapi&q=index&json=1"
       if client.apiKey.isSome:
         result &= "&api_key=" & client.apiKey.get()
@@ -63,7 +79,7 @@ proc prepareEndpoint*(client: BooruClient): string =
         result &= "?login=" & client.userId.get()
       if client.apiKey.isSome:
         result &= "&api_key=" & client.apiKey.get()
-    else:
+    of Yandere, Konachan, Sankaku:
       return
 
 proc formatTags(tags: Option[seq[string]], exclude_tags: Option[seq[string]]): seq[string] =
@@ -89,10 +105,12 @@ proc prepareGetPost*(client: BooruClient, id: string, url: string): string =
       result &= "posts/" & id & ".json"
     of Yandere, Konachan:
       result &= "post/show/" & id
+    of Sankaku:
+      let prefix = if id.len == 32: "md5:" else: "id_range:"
+      result &= "v2/posts?lang=en&page=1&limit=1&tags=" & prefix & id
 
 proc processPost*(client: BooruClient, cont: string): JsonNode =
   ## Parses a single post response from the API.
-  ## Raises BooruNotFoundError if the post doesn't exist.
   if cont.len == 0:
     raise newException(BooruNotFoundError, "Post not found")
 
@@ -128,6 +146,12 @@ proc processPost*(client: BooruClient, cont: string): JsonNode =
         if not resp["success"].getBool():
           raise newException(BooruNotFoundError, "Post not found")
       result = resp["post"]
+    of Sankaku:
+      var resp = parseJson(cont)
+      var elems = resp.getElems()
+      if elems.len == 0:
+        raise newException(BooruNotFoundError, "Post not found")
+      result = elems[0]
 
 proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Option[seq[string]], exclude_tags: Option[seq[string]], url: string): string =
   ## Builds the URL for searching posts with pagination and tag filters.
@@ -154,10 +178,16 @@ proc prepareSearchPosts*(client: BooruClient, limit: int, page: int, tags: Optio
       result &= "&page=" & $page
       if formatted_tags.len > 0:
         result &= "&tags=" & formatted_tags.join(" ")
+    of Sankaku:
+      result &= "v2/posts"
+      result &= "?lang=en"
+      result &= "&limit=" & $limit
+      result &= "&page=" & $page
+      if formatted_tags.len > 0:
+        result &= "&tags=" & formatted_tags.join(" ")
 
 proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
   ## Parses search results and returns a sequence of BooruImage objects.
-  ## Raises BooruNotFoundError if no posts match the search.
   var resp = parseJson(cont)
 
   var b = client.site.get()
@@ -181,6 +211,12 @@ proc processSearchPosts*(client: BooruClient, cont: string): seq[BooruImage] =
         result &= initBooruImage(client, p)
     of E621:
       var elems = resp["posts"].getElems()
+      if elems.len == 0:
+        raise newException(BooruNotFoundError, "Post not found")
+      for p in elems:
+        result &= initBooruImage(client, p)
+    of Sankaku:
+      var elems = resp.getElems()
       if elems.len == 0:
         raise newException(BooruNotFoundError, "Post not found")
       for p in elems:

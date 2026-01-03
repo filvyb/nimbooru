@@ -10,3 +10,4 @@ type
     Yandere = "https://yande.re/"
     Konachan = "https://konachan.com/"
     E621 = "https://e621.net/"
+    Sankaku = "https://sankakuapi.com/"

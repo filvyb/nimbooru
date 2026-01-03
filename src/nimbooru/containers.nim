@@ -64,9 +64,9 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
         result.height = img["height"].getInt()
         result.width = img["width"].getInt()
         result.rating = img["rating"].getStr()
-        result.has_comments = img["has_comments"].getBool()
-        result.has_notes = img["has_notes"].getBool()
-        result.has_children = img["has_children"].getBool()
+        result.has_comments = img["has_comments"].getBool(false)
+        result.has_notes = img["has_notes"].getBool(false)
+        result.has_children = img["has_children"].getBool(false)
         result.tags = img["tags"].getStr().split(" ")
         result.change = img["change"].getInt().fromUnix()
         result.status = img["status"].getStr()
@@ -117,7 +117,7 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
           result.has_notes = true
         else:
           result.has_notes = false
-        result.has_children = img["has_children"].getBool()
+        result.has_children = img["has_children"].getBool(false)
         result.tags = img["tag_string"].getStr().split(" ")
         result.change = parseTime(img["updated_at"].getStr(), "YYYY-MM-dd'T'HH:mm:ss'.'fffzzz", utc())
         result.status = img["media_asset"]["status"].getStr()
@@ -141,7 +141,7 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
         result.height = img["height"].getInt()
         result.width = img["width"].getInt()
         result.rating = img["rating"].getStr()
-        result.has_children = img["has_children"].getBool()
+        result.has_children = img["has_children"].getBool(false)
         result.tags = img["tags"].getStr().split(" ")
         result.status = img["status"].getStr()
         result.locked = img["is_held"].getBool()
@@ -187,3 +187,53 @@ proc initBooruImage*(client: BooruClient, img: JsonNode): BooruImage =
         result.change = parseTime(img["updated_at"].getStr(), "yyyy-MM-dd'T'HH:mm:ss'.'fffzzz", utc())
         result.locked = img["flags"]["status_locked"].getBool()
         result.score = img["score"]["total"].getInt()
+      of Sankaku:
+        result.id = img["id"].getStr()
+        if img.hasKey("author") and img["author"].kind == JObject:
+          if img["author"].hasKey("id"):
+            result.creator_id = some img["author"]["id"].getStr()
+        if img.hasKey("parent_id") and img["parent_id"].kind != JNull:
+          result.parent_id = img["parent_id"].getStr()
+        if img.hasKey("created_at") and img["created_at"].kind == JObject:
+          let ts = img["created_at"]["s"].getInt()
+          result.created_at = some parse($ts.fromUnix(), "yyyy-MM-dd'T'HH:mm:sszzz")
+          result.change = ts.fromUnix()
+        if img.hasKey("file_url") and img["file_url"].kind != JNull:
+          result.file_url = img["file_url"].getStr()
+          if result.file_url != "":
+            var path = result.file_url.rsplit({'/'}, maxsplit=1)[1]
+            if path.contains("?"):
+              path = path.split("?")[0]
+            result.filename = path
+        if img.hasKey("preview_url") and img["preview_url"].kind != JNull:
+          result.preview_url = img["preview_url"].getStr()
+        if img.hasKey("source") and img["source"].kind != JNull:
+          let src = img["source"].getStr()
+          if src != "" and src != "removed":
+            result.source = some src
+        if img.hasKey("md5") and img["md5"].kind != JNull:
+          result.hash = img["md5"].getStr()
+        result.height = img["height"].getInt()
+        result.width = img["width"].getInt()
+        if img.hasKey("rating"):
+          result.rating = img["rating"].getStr()
+        result.has_comments = img["has_comments"].getBool(false)
+        result.has_notes = img["has_notes"].getBool(false)
+        result.has_children = img["has_children"].getBool(false)
+        if img.hasKey("tag_names"):
+          for t in img["tag_names"].getElems():
+            let tag = t.getStr()
+            if tag != "":
+              result.tags &= tag
+        if result.tags.len == 0 and img.hasKey("tags"):
+          for t in img["tags"].getElems():
+            if t.kind == JString:
+              let tag = t.getStr()
+              if tag != "":
+                result.tags &= tag
+            elif t.kind == JObject and t.hasKey("name"):
+              let tag = t["name"].getStr()
+              if tag != "":
+                result.tags &= tag
+        result.status = img["status"].getStr("active")
+        result.score = img["total_score"].getInt(0)
